@@ -44,15 +44,17 @@ STOP={"de","da","do","das","dos","uma","para","com","por","que","não","nos","na
 def tokens(q):
     return [x for x in re.findall(r"[a-z0-9áéíóúâêôãõç]+",q.lower()) if len(x)>2 and x not in STOP]
 
-BLOCK=re.compile(r'(?im)^\s*Enunciado\s+(\d{1,4})\s*(.*?)$(.*?)(?=^\s*Enunciado\s+\d{1,4}\b|\Z)',re.S|re.M)
+HEADER=re.compile(r'(?im)^\s*Enunciado\s+(\d{1,4})([^\n]*)$')
 def search_pdf(src, query, limit):
     q=tokens(query); rows=[]; cancelled=0
     text=pdf_text(src)
-    for m in BLOCK.finditer(text):
+    matches=list(HEADER.finditer(text))
+    for index,m in enumerate(matches):
         num=m.group(1)
         header=(m.group(2) or "").strip()
-        body=re.sub(r"\s+"," ",m.group(3)).strip()
-        marker=(header+" "+body[:120]).upper()
+        end=matches[index+1].start() if index+1<len(matches) else len(text)
+        body=re.sub(r"\s+"," ",text[m.end():end]).strip()
+        marker=(header+" "+body[:160]).upper()
         if "CANCELADO" in marker:
             cancelled += 1
             continue
